@@ -102,40 +102,64 @@ class WcOrderRedirectErrorTest extends TestCase {
         $this->assertSame('', $url, 'data: scheme → URL 반환 안 함');
     }
 
-    // ── 주문 상태별 동작 (현재 동작 문서화)
-    // ⚠️ NOTE: maybe_redirect()는 현재 주문 상태를 검사하지 않음.
-    //           pending/failed 주문도 order-received URL에 직접 접근 시 리다이렉트됨.
-    //           이는 무통장입금(on-hold) 등 미결제 주문에서 의도치 않게 발동할 수 있으므로
-    //           운영 환경에 맞게 상태 게이팅 추가를 검토해야 함.
+    // ── 주문 상태별 동작 ──────────────────────────────────────────────────────
+    // NOTE: maybe_redirect()는 failed/cancelled/refunded/checkout-draft를 denylist로 차단.
+    //       get_redirect_url()은 상태를 검사하지 않으므로 아래 테스트는 URL 반환 여부만 확인한다.
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_current_behavior_returns_url_regardless_of_pending_status(): void {
+    public function test_get_redirect_url_returns_url_for_pending_status(): void {
         $item  = new WC_Order_Item_Product(10, 50.0);
         $order = new WC_Order_WithStatus([$item], 'pending');
 
         $GLOBALS['_post_meta'][10]['_wc_order_redirect_enabled'] = 'yes';
         $GLOBALS['_post_meta'][10]['_wc_order_redirect_url']     = 'https://example.com/target';
 
-        // get_redirect_url()는 주문 상태를 검사하지 않음
+        // get_redirect_url()는 상태 비검사 — pending도 URL 반환 (maybe_redirect에서 차단 아님)
         $url = (new WC_Order_Redirect())->get_redirect_url($order);
 
-        // 현재 동작: pending 상태 주문도 리다이렉트 URL 반환됨 (상태 게이팅 없음)
-        $this->assertSame('https://example.com/target', $url,
-            '⚠️ pending 상태도 URL 반환됨 — 무통장입금 등 미결제 주문 리다이렉트 검토 필요');
+        $this->assertSame('https://example.com/target', $url);
     }
 
-    public function test_current_behavior_returns_url_regardless_of_failed_status(): void {
+    public function test_get_redirect_url_returns_url_for_failed_status(): void {
         $item  = new WC_Order_Item_Product(10, 50.0);
         $order = new WC_Order_WithStatus([$item], 'failed');
 
         $GLOBALS['_post_meta'][10]['_wc_order_redirect_enabled'] = 'yes';
         $GLOBALS['_post_meta'][10]['_wc_order_redirect_url']     = 'https://example.com/target';
 
+        // get_redirect_url()는 상태 비검사 — maybe_redirect()의 denylist가 차단함
         $url = (new WC_Order_Redirect())->get_redirect_url($order);
 
-        // 현재 동작: failed 상태 주문도 리다이렉트 URL 반환됨
-        $this->assertSame('https://example.com/target', $url,
-            '⚠️ failed 상태도 URL 반환됨 — 결제 실패 주문 리다이렉트 검토 필요');
+        $this->assertSame('https://example.com/target', $url);
+    }
+
+    /**
+     * @dataProvider deniedStatusProvider
+     */
+    public function test_maybe_redirect_blocks_denylist_statuses(string $status): void {
+        $GLOBALS['_is_order_received_page']      = true;
+        $GLOBALS['_query_vars']['order-received'] = 1;
+
+        $item  = new WC_Order_Item_Product(10, 50.0);
+        $order = new WC_Order_WithStatus([$item], $status);
+        $GLOBALS['_wc_orders'][1] = $order;
+
+        $GLOBALS['_post_meta'][10]['_wc_order_redirect_enabled'] = 'yes';
+        $GLOBALS['_post_meta'][10]['_wc_order_redirect_url']     = 'https://example.com/target';
+
+        (new WC_Order_Redirect())->maybe_redirect();
+
+        $this->assertFalse($GLOBALS['_wp_redirect_called'],
+            "{$status} 상태 주문 → denylist 차단으로 리다이렉트 없음");
+    }
+
+    public static function deniedStatusProvider(): array {
+        return [
+            ['failed'],
+            ['cancelled'],
+            ['refunded'],
+            ['checkout-draft'],
+        ];
     }
 
     // ── 플러그인 공존 — 메타 키 독립성 ─────────────────────────────────────

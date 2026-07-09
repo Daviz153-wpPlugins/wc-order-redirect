@@ -15,8 +15,9 @@ const { dockerPhp }    = require('./helpers');
 const fs               = require('fs');
 const path             = require('path');
 
-const DEFAULT_URL  = 'http://localhost:8080/';
-const PRODUCT_URL  = 'http://localhost:8080/?from=product';
+const WP_BASE      = (process.env.WP_BASE_URL || 'http://localhost:8080/').replace(/\/$/, '');
+const DEFAULT_URL  = WP_BASE + '/';
+const PRODUCT_URL  = WP_BASE + '/?from=product';
 
 let testData;
 

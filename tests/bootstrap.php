@@ -6,6 +6,7 @@ define('DOING_AUTOSAVE', false);
 // --- WordPress 훅 스텁 (생성자 등록용, 실제 발동 불필요) ---
 function add_action(string $hook, callable $callback, int $priority = 10, int $args = 1): void {}
 function add_filter(string $hook, callable $callback, int $priority = 10, int $args = 1): void {}
+function apply_filters(string $hook, mixed $value, mixed ...$args): mixed { return $value; }
 function add_meta_box(string $id, string $title, callable $callback, string $screen, string $context = 'advanced'): void {}
 function get_current_screen(): ?object { return null; }
 function plugin_dir_url(string $file): string { return 'http://example.com/plugins/wc-order-redirect/'; }
@@ -46,6 +47,13 @@ function delete_option(string $key): bool {
 }
 
 // --- URL 처리 ---
+function wp_parse_url(string $url, int $component = -1): mixed {
+    return parse_url($url, $component);
+}
+function home_url(string $path = ''): string {
+    // 테스트 환경 기본 호스트 = example.com (테스트 픽스처 URL과 일치)
+    return 'http://example.com' . ($path ? '/' . ltrim($path, '/') : '');
+}
 function esc_url_raw(string $url): string {
     // http/https 외 scheme 차단
     if (!preg_match('/^https?:\/\//i', $url)) return '';
@@ -99,6 +107,7 @@ class WC_Order {
     private array $items;
     private int $id;
     private array $meta = [];
+    private string $status = 'processing';
 
     public function __construct(array $items = [], int $id = 0) {
         $this->items = $items;
@@ -108,6 +117,10 @@ class WC_Order {
     public function get_items(): array      { return $this->items; }
     public function get_id(): int           { return $this->id; }
     public function key_is_valid(string $key): bool { return true; }
+    public function get_status(): string    { return $this->status; }
+    public function has_status(mixed $statuses): bool {
+        return in_array($this->get_status(), (array) $statuses, true);
+    }
 
     public function get_billing_first_name(): string { return ''; }
     public function get_billing_last_name(): string  { return ''; }
@@ -132,3 +145,6 @@ class WC_Order_Item_Product {
 }
 
 class WooCommerce {}
+
+// wcor_is_url_domain_allowed() 등 전역 함수 로드
+require_once __DIR__ . '/../wc-order-redirect.php';

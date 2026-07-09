@@ -89,15 +89,25 @@ class WC_Order_Redirect_Settings extends WC_Settings_Page {
 		$enabled = ! empty( $_POST['wcor_enabled'] ) ? 'yes' : 'no';
 		$raw_url = trim( wp_unslash( (string) ( $_POST['wcor_default_url'] ?? '' ) ) );
 
-		if ( '' !== $raw_url && (
-			! filter_var( $raw_url, FILTER_VALIDATE_URL ) ||
-			( ! str_starts_with( $raw_url, 'http://' ) && ! str_starts_with( $raw_url, 'https://' ) )
-		) ) {
-			WC_Admin_Settings::add_error(
-				__( '기본 리다이렉트 URL이 유효하지 않습니다. http:// 또는 https://로 시작하는 전체 주소를 입력해주세요.', 'wc-order-redirect' )
-			);
-			update_option( 'wcor_enabled', $enabled );
-			return;
+		if ( '' !== $raw_url ) {
+			if (
+				! filter_var( $raw_url, FILTER_VALIDATE_URL ) ||
+				( ! str_starts_with( $raw_url, 'http://' ) && ! str_starts_with( $raw_url, 'https://' ) )
+			) {
+				WC_Admin_Settings::add_error(
+					__( '기본 리다이렉트 URL이 유효하지 않습니다. http:// 또는 https://로 시작하는 전체 주소를 입력해주세요.', 'wc-order-redirect' )
+				);
+				update_option( 'wcor_enabled', $enabled );
+				return;
+			}
+
+			if ( ! wcor_is_url_domain_allowed( $raw_url ) ) {
+				WC_Admin_Settings::add_error(
+					__( '허용되지 않은 도메인입니다. 자체 도메인 또는 허용된 외부 서비스(make.com, tally.so)만 사용 가능합니다.', 'wc-order-redirect' )
+				);
+				update_option( 'wcor_enabled', $enabled );
+				return;
+			}
 		}
 
 		update_option( 'wcor_enabled', $enabled );
@@ -152,7 +162,7 @@ class WC_Order_Redirect_Settings extends WC_Settings_Page {
 							placeholder="https://">
 					<button type="button" class="button"
 							style="flex-shrink:0;border-radius:0 4px 4px 0;height:30px;line-height:28px;"
-							onclick="(function(){var v=document.getElementById('<?php echo esc_js( $id ); ?>').value.trim();if(v)window.open(v,'_blank');else alert('URL을 먼저 입력해주세요.');})()">확인</button>
+							onclick="(function(){var v=document.getElementById('<?php echo esc_js( $id ); ?>').value.trim();if(!v){alert('URL을 먼저 입력해주세요.');return;}if(!/^https?:\/\//i.test(v)){alert('http:// 또는 https://로 시작하는 URL만 열 수 있습니다.');return;}window.open(v,'_blank','noopener,noreferrer');})()">확인</button>
 				</div>
 				<?php if ( ! empty( $value['desc'] ) ) : ?>
 					<p class="description"><?php echo esc_html( $value['desc'] ); ?></p>

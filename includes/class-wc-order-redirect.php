@@ -26,6 +26,11 @@ class WC_Order_Redirect {
 			return;
 		}
 
+		$skip_statuses = apply_filters( 'wcor_skip_redirect_statuses', array( 'failed', 'cancelled', 'refunded', 'checkout-draft' ) );
+		if ( $order->has_status( $skip_statuses ) ) {
+			return;
+		}
+
 		$url = $this->get_redirect_url( $order );
 		if ( ! $url ) {
 			return;
@@ -110,7 +115,8 @@ class WC_Order_Redirect {
 
 	private function is_valid_url( string $url ): bool {
 		return (bool) filter_var( $url, FILTER_VALIDATE_URL )
-			&& ( str_starts_with( $url, 'http://' ) || str_starts_with( $url, 'https://' ) );
+			&& ( str_starts_with( $url, 'http://' ) || str_starts_with( $url, 'https://' ) )
+			&& wcor_is_url_domain_allowed( $url );
 	}
 
 	private function write_log( array $entry ): void {

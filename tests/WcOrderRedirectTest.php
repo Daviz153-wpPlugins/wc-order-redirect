@@ -169,6 +169,31 @@ class WcOrderRedirectTest extends TestCase {
         $this->assertSame('', $url);
     }
 
+    public function test_skips_non_whitelisted_domain(): void {
+        $item  = new WC_Order_Item_Product(10, 50.0);
+        $order = new WC_Order([$item]);
+
+        // evil.com 은 허용 목록에 없으므로 도메인 화이트리스트에서 차단되어야 함
+        $GLOBALS['_post_meta'][10]['_wc_order_redirect_enabled'] = 'yes';
+        $GLOBALS['_post_meta'][10]['_wc_order_redirect_url']     = 'https://evil.com/steal';
+
+        $url = (new WC_Order_Redirect())->get_redirect_url($order);
+
+        $this->assertSame('', $url, '허용되지 않은 도메인 → 빈 문자열 반환');
+    }
+
+    public function test_skips_non_whitelisted_default_url(): void {
+        $item  = new WC_Order_Item_Product(10, 50.0);
+        $order = new WC_Order([$item]);
+
+        $GLOBALS['_post_meta'][10]['_wc_order_redirect_enabled'] = 'no';
+        $GLOBALS['_options']['wcor_default_url']                 = 'https://evil.com/steal';
+
+        $url = (new WC_Order_Redirect())->get_redirect_url($order);
+
+        $this->assertSame('', $url, '글로벌 기본 URL도 허용되지 않은 도메인이면 차단');
+    }
+
     public function test_skips_invalid_default_url(): void {
         $item  = new WC_Order_Item_Product(10, 50.0);
         $order = new WC_Order([$item]);

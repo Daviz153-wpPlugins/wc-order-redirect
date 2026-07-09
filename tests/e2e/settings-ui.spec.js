@@ -46,7 +46,7 @@ test.setTimeout(60_000);
 // ── 1. 기본 URL 저장 → 필드·DB 반영 ────────────────────────────────────────
 
 test('기본 URL 입력 후 저장 → 설정 탭 필드에 반영되고 DB에 저장됨', async ({ page }) => {
-    const TARGET_URL = 'https://example.com/';
+    const TARGET_URL = 'https://tally.so/settings-ui-test';
 
     await page.goto(adminUrl('admin.php?page=wc-settings&tab=wcor'));
 

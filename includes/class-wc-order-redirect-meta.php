@@ -25,13 +25,13 @@ class WC_Order_Redirect_Meta {
 			'wcor-meta-box',
 			plugin_dir_url( __DIR__ ) . 'assets/css/meta-box.css',
 			array(),
-			'1.1.3'
+			'1.1.4'
 		);
 		wp_enqueue_script(
 			'wcor-meta-box',
 			plugin_dir_url( __DIR__ ) . 'assets/js/meta-box.js',
 			array(),
-			'1.1.3',
+			'1.1.4',
 			true
 		);
 	}

@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.4] - 2026-07-09
+
+### 보안
+- **오픈 리다이렉트 차단**: 리다이렉트 대상 URL을 도메인 화이트리스트로 검증 (`wcor_is_url_domain_allowed()`).
+  허용 도메인: 자체 사이트 도메인, money153.com, crmbiz.kr, make.com, tally.so (서브도메인 포함).
+  추가 도메인은 `wcor_allowed_redirect_domains` 필터로 확장 가능.
+- **결제 실패 상태에서 리다이렉트 차단**: `failed`, `cancelled`, `refunded`, `checkout-draft` 주문 상태 denylist 추가.
+  허용 상태 목록은 `wcor_skip_redirect_statuses` 필터로 조정 가능.
+- **설정 저장 도메인 검증**: 관리자 설정 탭에서 기본 URL 저장 시 도메인 화이트리스트 적용 — 허용되지 않은 도메인 입력 시 오류 메시지 표시 후 저장 중단.
+- **URL 미리보기 버튼 XSS 차단**: 설정 탭 URL 미리보기 버튼(`window.open`)에 http/https 스킴 검사 및 `noopener,noreferrer` 추가.
+
+### 테스트
+- PHPUnit: 도메인 비허용 URL 차단 테스트 2건 추가, denylist 상태 dataProvider 테스트 추가
+- PHPUnit: bootstrap.php에 `apply_filters`, `wp_parse_url`, `home_url`, `WC_Order::has_status()` 스텁 추가
+- E2E: `settings-ui.spec.js` 기본 URL을 tally.so 도메인으로 변경 (도메인 검증 통과)
+- E2E: `default-redirect.spec.js` URL 상수를 `WP_BASE_URL` 환경변수 기반으로 동적화 (CI 환경 호환)
+
+---
+
 ## [1.1.3] - 2026-06-14
 
 ### 테스트
