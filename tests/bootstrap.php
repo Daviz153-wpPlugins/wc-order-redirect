@@ -146,5 +146,5 @@ class WC_Order_Item_Product {
 
 class WooCommerce {}
 
-// wcor_is_url_domain_allowed() 등 전역 함수 로드
-require_once __DIR__ . '/../wc-order-redirect.php';
+// wcor_is_url_domain_allowed() 전역 함수 로드 (메인 파일 대신 함수 파일만 포함)
+require_once __DIR__ . '/../includes/functions.php';
